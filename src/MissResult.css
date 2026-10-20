@@ -1,0 +1,59 @@
+.startup-playback.miss-result {
+  padding: 24px;
+  box-sizing: border-box;
+  background: #d1d5db;
+  color: #1f2937;
+}
+
+.miss-result__content {
+  display: grid;
+  justify-items: center;
+  gap: 32px;
+}
+
+.miss-result__title {
+  display: flex;
+  margin: 0;
+  color: inherit;
+  font-size: clamp(72px, 20vw, 144px);
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: 0.03em;
+}
+
+.miss-result__title span {
+  display: inline-block;
+  animation: miss-letter-appear 180ms ease-out both;
+}
+
+@keyframes miss-letter-appear {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.miss-result__replay {
+  min-height: 48px;
+  padding: 14px 28px;
+  border: 1px solid #374151;
+  border-radius: 12px;
+  background: #374151;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.miss-result__replay:hover {
+  background: #1f2937;
+}
+
+.miss-result__replay:focus-visible {
+  outline: 3px solid #1f2937;
+  outline-offset: 4px;
+}

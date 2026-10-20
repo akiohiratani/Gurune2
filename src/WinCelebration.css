@@ -1,0 +1,68 @@
+.win-celebration {
+  overflow: hidden;
+}
+
+.win-celebration__image {
+  position: absolute;
+  inset: 0;
+}
+
+.win-celebration__shutters {
+  position: absolute;
+  inset: 0;
+}
+
+.win-celebration__shutter {
+  position: absolute;
+  top: 0;
+  width: 50%;
+  height: 100%;
+  overflow: hidden;
+  animation-duration: var(--shutter-duration);
+  animation-timing-function: ease-in;
+  animation-fill-mode: both;
+}
+
+.win-celebration__shutter img {
+  position: absolute;
+  top: 0;
+  width: 200%;
+  max-width: none;
+  height: 100%;
+  object-fit: contain;
+}
+
+.win-celebration__shutter--left {
+  left: 0;
+  animation-name: win-close-left;
+}
+
+.win-celebration__shutter--left img {
+  left: 0;
+}
+
+.win-celebration__shutter--right {
+  right: 0;
+  animation-name: win-close-right;
+}
+
+.win-celebration__shutter--right img {
+  right: 0;
+}
+
+@keyframes win-close-left {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes win-close-right {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.win-celebration__error {
+  position: absolute;
+  bottom: 16px;
+  padding: 8px 16px;
+  background: var(--bg);
+}
