@@ -6,6 +6,13 @@
   background: var(--bg);
 }
 
+.startup-playback__content {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
 .startup-playback__prompt {
   display: grid;
   justify-items: center;

@@ -10,7 +10,7 @@ const WIN_IMAGES = ['/img/win/1.png', '/img/win/2.png']
 const WIN_AUDIO = '/voice/2.mp3'
 
 export default function WinCelebration({ audioRef, onReplay }: {
-  audioRef: RefObject<HTMLAudioElement | null>
+  audioRef: RefObject<HTMLMediaElement | null>
   onReplay: () => void
 }) {
   const [phase, setPhase] = useState<'closing' | 'flashing'>('closing')
@@ -44,7 +44,7 @@ export default function WinCelebration({ audioRef, onReplay }: {
       data-phase={phase}
       style={{ '--shutter-duration': SHUTTER_DURATION_MS + 'ms' } as CSSProperties}
     >
-      <p className="win-celebration__status" role="status">当選！</p>
+      <p className="win-celebration__status" role="status"></p>
       {WIN_IMAGES.map((src, index) => (
         <img
           key={src}

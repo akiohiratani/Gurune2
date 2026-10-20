@@ -22,7 +22,7 @@ const TRANSITIONS = {
 
 export default function CategoryCelebration({ number, audioRef, onReplay }: {
   number: number
-  audioRef: RefObject<HTMLAudioElement | null>
+  audioRef: RefObject<HTMLMediaElement | null>
   onReplay: () => void
 }) {
   const [phase, setPhase] = useState<Phase>('loading')

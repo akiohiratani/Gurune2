@@ -3,7 +3,7 @@ import type { RefObject } from 'react'
 
 // Audio must never prevent the visual sequence from reaching the result.
 export default function useCelebrationAudio(
-  audioRef: RefObject<HTMLAudioElement | null>,
+  audioRef: RefObject<HTMLMediaElement | null>,
   src: string,
   active: boolean,
   fallbackDurationMs: number,
@@ -56,7 +56,7 @@ export default function useCelebrationAudio(
       audio.addEventListener('ended', finish)
       audio.addEventListener('error', unavailable)
       try {
-        // Reuse the element started by the initial tap; iOS grants playback per element.
+        // The movie player also supports audio-only sources; preserve its tap permission.
         audio.src = src
         audio.load()
         void audio.play().catch(unavailable)

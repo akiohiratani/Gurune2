@@ -12,7 +12,6 @@ export default function StartupPlayback() {
   const [winProbability, setWinProbability] = useState(50)
   const [error, setError] = useState('')
   const videoRef = useRef<HTMLVideoElement>(null)
-  const audioRef = useRef<HTMLAudioElement>(null)
   const attemptRef = useRef<AbortController | null>(null)
   const hasWonRef = useRef(false)
   const winStartSecondRef = useRef<number | null>(null)
@@ -20,12 +19,10 @@ export default function StartupPlayback() {
 
   useEffect(() => {
     const video = videoRef.current
-    const audio = audioRef.current
 
     return () => {
       attemptRef.current?.abort()
       video?.pause()
-      audio?.pause()
     }
   }, [])
 
@@ -37,16 +34,14 @@ export default function StartupPlayback() {
     winStartSecondRef.current = null
     winStartedRef.current = false
     videoRef.current?.pause()
-    audioRef.current?.pause()
     setError('再生できませんでした。もう一度「再生」を押してください。')
     setPhase('idle')
   }
 
   async function startPlayback() {
     const video = videoRef.current
-    const audio = audioRef.current
-    // Guard synchronously so rapid clicks cannot start a second pair.
-    if (attemptRef.current || !video || !audio) return
+    // Guard synchronously so rapid clicks cannot start a second run.
+    if (attemptRef.current || !video) return
 
     const attempt = new AbortController()
     attemptRef.current = attempt
@@ -63,12 +58,11 @@ export default function StartupPlayback() {
 
     try {
       video.src = `/movie/${number}.mp4`
-      audio.src = `/movie/${number}.mp3`
       video.load()
-      audio.load()
+      // Each MP4 already contains the matching soundtrack. One media clock keeps
+      // picture and sound together during initial loading, seeking, and buffering.
       // Call play() before any await so iOS retains the tap's playback permission.
-      // Keep this audio element mounted for the movie and both celebrations.
-      await Promise.all([video.play(), audio.play()])
+      await video.play()
     } catch {
       if (!attempt.signal.aborted) resetPlayback()
     }
@@ -85,7 +79,6 @@ export default function StartupPlayback() {
     // Release the movie decoder before allocating the celebration image layers.
     video?.removeAttribute('src')
     video?.load()
-    audioRef.current?.pause()
     setPhase('won')
   }
 
@@ -104,7 +97,7 @@ export default function StartupPlayback() {
       startWinCelebration()
       return
     }
-    if (videoRef.current?.ended && audioRef.current?.ended) {
+    if (videoRef.current?.ended) {
       attemptRef.current?.abort()
       attemptRef.current = null
       setPhase('complete')
@@ -122,13 +115,25 @@ export default function StartupPlayback() {
   }
 
   return (
-    <>
+    <div className="startup-playback">
+      {/* Keep the tap-authorized player mounted for the movie and both voices. */}
+      <video
+        ref={videoRef}
+        className="startup-playback__video"
+        hidden={phase !== 'playing'}
+        playsInline
+        preload="auto"
+        onPlaying={() => { if (phase === 'playing') checkWinStartTime() }}
+        onTimeUpdate={() => { if (phase === 'playing') checkWinStartTime() }}
+        onEnded={() => { if (phase === 'playing') finishPlayback() }}
+        onError={() => { if (phase === 'playing') resetPlayback() }}
+      />
       {phase === 'complete' ? (
         <MissResult onReplay={returnHome} />
       ) : phase === 'won' ? (
-        <WinCelebration audioRef={audioRef} onReplay={returnHome} />
+        <WinCelebration audioRef={videoRef} onReplay={returnHome} />
       ) : (
-        <main className="startup-playback" aria-label="起動時の動画再生">
+        <main className="startup-playback__content" aria-label="起動時の動画再生">
           {phase === 'idle' && (
             <div className="startup-playback__prompt">
               <h1 className="startup-playback__headline">
@@ -156,28 +161,10 @@ export default function StartupPlayback() {
               {error && <p role="alert">{error}</p>}
             </div>
           )}
-          <video
-            ref={videoRef}
-            className="startup-playback__video"
-            hidden={phase === 'idle'}
-            muted
-            playsInline
-            preload="auto"
-            onPlaying={checkWinStartTime}
-            onTimeUpdate={checkWinStartTime}
-            onEnded={finishPlayback}
-            onError={resetPlayback}
-          />
           <VideoProgress videoRef={videoRef} />
         </main>
       )}
-      <audio
-        ref={audioRef}
-        preload="auto"
-        onEnded={() => { if (phase === 'playing') finishPlayback() }}
-        onError={() => { if (phase === 'playing') resetPlayback() }}
-      />
-    </>
+    </div>
   )
 }
 
