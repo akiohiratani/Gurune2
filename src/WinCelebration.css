@@ -60,9 +60,8 @@
   to { transform: translateX(0); }
 }
 
-.win-celebration__error {
-  position: absolute;
-  bottom: 16px;
-  padding: 8px 16px;
-  background: var(--bg);
+.win-celebration__status {
+  font-size: clamp(36px, 10vw, 80px);
+  font-weight: 800;
+  color: var(--text-h);
 }

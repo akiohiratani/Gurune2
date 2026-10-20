@@ -7,36 +7,6 @@ import './StartupPlayback.css'
 const MIN_WIN_START_SECONDS = 5
 const MAX_WIN_START_SECONDS = 30
 
-function waitUntilReady(media: HTMLMediaElement, signal: AbortSignal) {
-  return new Promise<void>((resolve, reject) => {
-    const cleanup = () => {
-      media.removeEventListener('canplay', ready)
-      media.removeEventListener('error', failed)
-      signal.removeEventListener('abort', aborted)
-    }
-    const ready = () => {
-      cleanup()
-      resolve()
-    }
-    const failed = () => {
-      cleanup()
-      reject(new Error('Media could not be loaded'))
-    }
-    const aborted = () => {
-      cleanup()
-      reject(new DOMException('Playback cancelled', 'AbortError'))
-    }
-
-    if (signal.aborted) return aborted()
-    if (media.error) return failed()
-    if (media.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) return ready()
-
-    media.addEventListener('canplay', ready)
-    media.addEventListener('error', failed)
-    signal.addEventListener('abort', aborted, { once: true })
-  })
-}
-
 export default function StartupPlayback() {
   const [phase, setPhase] = useState<'idle' | 'playing' | 'won' | 'complete'>('idle')
   const [winProbability, setWinProbability] = useState(50)
@@ -96,14 +66,8 @@ export default function StartupPlayback() {
       audio.src = `/movie/${number}.mp3`
       video.load()
       audio.load()
-      await Promise.all([
-        waitUntilReady(video, attempt.signal),
-        waitUntilReady(audio, attempt.signal),
-      ])
-      if (attempt.signal.aborted) return
-
-      // Both are buffered before issuing play() in the same turn.
-      // The video is muted so only the separate MP3 supplies sound.
+      // Call play() before any await so iOS retains the tap's playback permission.
+      // Keep this audio element mounted for the movie and both celebrations.
       await Promise.all([video.play(), audio.play()])
     } catch {
       if (!attempt.signal.aborted) resetPlayback()
@@ -116,7 +80,11 @@ export default function StartupPlayback() {
     winStartedRef.current = true
     attemptRef.current.abort()
     attemptRef.current = null
-    videoRef.current?.pause()
+    const video = videoRef.current
+    video?.pause()
+    // Release the movie decoder before allocating the celebration image layers.
+    video?.removeAttribute('src')
+    video?.load()
     audioRef.current?.pause()
     setPhase('won')
   }
@@ -153,59 +121,63 @@ export default function StartupPlayback() {
     setPhase('idle')
   }
 
-  if (phase === 'complete') return <MissResult onReplay={returnHome} />
-
-  if (phase === 'won') return <WinCelebration onReplay={returnHome} />
-
   return (
-    <main className="startup-playback" aria-label="起動時の動画再生">
-      {phase === 'idle' && (
-        <div className="startup-playback__prompt">
-          <h1 className="startup-playback__headline">
-            <span>動画の再生中に</span>
-            <strong>山岸が降臨したら</strong>
-            <span>大当たり!?</span>
-          </h1>
-          <button type="button" onClick={startPlayback}>
-            再生
-          </button>
-          <div className="startup-playback__probability">
-            <label htmlFor="win-probability">当選確率</label>
-            <select
-              id="win-probability"
-              value={winProbability}
-              onChange={(event) => setWinProbability(Number(event.target.value))}
-            >
-              {[1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 99].map((probability) => (
-                <option key={probability} value={probability}>
-                  {probability}%
-                </option>
-              ))}
-            </select>
-          </div>
-          {error && <p role="alert">{error}</p>}
-        </div>
+    <>
+      {phase === 'complete' ? (
+        <MissResult onReplay={returnHome} />
+      ) : phase === 'won' ? (
+        <WinCelebration audioRef={audioRef} onReplay={returnHome} />
+      ) : (
+        <main className="startup-playback" aria-label="起動時の動画再生">
+          {phase === 'idle' && (
+            <div className="startup-playback__prompt">
+              <h1 className="startup-playback__headline">
+                <span>動画の再生中に</span>
+                <strong>山岸が降臨したら</strong>
+                <span>大当たり!?</span>
+              </h1>
+              <button type="button" onClick={startPlayback}>
+                再生
+              </button>
+              <div className="startup-playback__probability">
+                <label htmlFor="win-probability">当選確率</label>
+                <select
+                  id="win-probability"
+                  value={winProbability}
+                  onChange={(event) => setWinProbability(Number(event.target.value))}
+                >
+                  {[1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 99].map((probability) => (
+                    <option key={probability} value={probability}>
+                      {probability}%
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {error && <p role="alert">{error}</p>}
+            </div>
+          )}
+          <video
+            ref={videoRef}
+            className="startup-playback__video"
+            hidden={phase === 'idle'}
+            muted
+            playsInline
+            preload="auto"
+            onPlaying={checkWinStartTime}
+            onTimeUpdate={checkWinStartTime}
+            onEnded={finishPlayback}
+            onError={resetPlayback}
+          />
+          <VideoProgress videoRef={videoRef} />
+        </main>
       )}
-      <video
-        ref={videoRef}
-        className="startup-playback__video"
-        hidden={phase === 'idle'}
-        muted
-        playsInline
-        preload="auto"
-        onPlaying={checkWinStartTime}
-        onTimeUpdate={checkWinStartTime}
-        onEnded={finishPlayback}
-        onError={resetPlayback}
-      />
       <audio
         ref={audioRef}
         preload="auto"
-        onEnded={finishPlayback}
-        onError={resetPlayback}
+        onEnded={() => { if (phase === 'playing') finishPlayback() }}
+        onError={() => { if (phase === 'playing') resetPlayback() }}
       />
-      <VideoProgress videoRef={videoRef} />
-    </main>
+    </>
   )
 }
 

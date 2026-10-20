@@ -1,10 +1,15 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import './WinResult.css'
 
 const LETTER_INTERVAL_MS = 250
 
 export default function WinResult({ onReplay }: { onReplay: () => void }) {
   const [readyToReplay, setReadyToReplay] = useState(false)
+
+  useEffect(() => {
+    const timer = setTimeout(() => setReadyToReplay(true), 2 * LETTER_INTERVAL_MS + 320)
+    return () => clearTimeout(timer)
+  }, [])
 
   return (
     <section className="win-result" aria-label="大当たり結果">
